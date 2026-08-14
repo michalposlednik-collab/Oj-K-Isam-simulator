@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OJ&K / Ísam — Warehouse Manager</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef1f4;color:#172534;font-family:Arial,Helvetica,sans-serif;font-size:13px}
+button{font:inherit;cursor:pointer}
+.top{height:58px;background:#12304a;color:#fff;display:flex;align-items:center;padding:0 16px;gap:18px}
+.logo{height:42px;max-width:150px;object-fit:contain;background:#fff;padding:2px;border-radius:2px}
+.title{font-size:18px;font-weight:bold} .subtitle{font-size:10px;color:#b8ccdc;letter-spacing:1px}
+.topright{margin-left:auto;display:flex;gap:22px;align-items:center}
+.kpi-mini{text-align:right} .kpi-mini small{display:block;color:#9fb5c7;font-size:9px} .kpi-mini b{font-size:15px}
+.ribbon{height:48px;background:#fff;border-bottom:1px solid #c7d0d7;display:flex;align-items:center;padding:0 14px;gap:4px}
+.ribbon button{border:0;background:#fff;padding:8px 12px;color:#29455c;border-radius:3px}
+.ribbon button:hover,.ribbon button.active{background:#dceaf4}
+.layout{display:grid;grid-template-columns:190px 1fr;min-height:calc(100vh - 106px)}
+.side{background:#f8fafb;border-right:1px solid #cbd4da;padding:10px}
+.side h3{font-size:10px;color:#6e8190;margin:10px 8px 7px;text-transform:uppercase;letter-spacing:1px}
+.nav{padding:9px 10px;border-radius:3px;margin:2px 0;color:#29455c}
+.nav.active{background:#dceaf4;border-left:3px solid #246b98;padding-left:7px;font-weight:bold}
+.main{padding:14px;min-width:0}
+.cards{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:8px;margin-bottom:12px}
+.card{background:#fff;border:1px solid #c8d1d7;border-radius:2px;padding:10px}
+.card small{display:block;color:#6d808e;font-size:9px;text-transform:uppercase;letter-spacing:.7px}
+.card strong{display:block;font-size:20px;margin-top:5px;color:#153b58}
+.card em{font-style:normal;color:#728692;font-size:10px}
+.grid{display:grid;grid-template-columns:1.35fr .85fr;gap:12px}
+.panel{background:#fff;border:1px solid #c8d1d7;margin-bottom:12px}
+.panelhead{height:42px;background:#f2f5f7;border-bottom:1px solid #d1d9de;padding:0 12px;display:flex;align-items:center;justify-content:space-between}
+.panelhead b{font-size:11px;letter-spacing:.7px} .panelhead span{font-size:10px;color:#738693}
+.table{width:100%;border-collapse:collapse} .table th{background:#e8eef2;color:#566d7d;text-align:left;font-size:9px;text-transform:uppercase;padding:8px;border-bottom:1px solid #cbd5db}
+.table td{padding:8px;border-bottom:1px solid #edf0f2;font-size:11px}
+.status{padding:3px 6px;border-radius:2px;background:#e4f1e9;color:#276342;font-size:9px;font-weight:bold}
+.status.warn{background:#fff0d5;color:#8a5b12} .status.bad{background:#f8dddd;color:#8d2828}
+.progress{height:10px;background:#e1e7eb;border-radius:2px;overflow:hidden} .progress i{display:block;height:100%;background:#2b729e}
+.actions{display:flex;gap:7px;flex-wrap:wrap;padding:10px}
+.action{border:1px solid #b8c5cd;background:#f7f9fa;padding:8px 10px;border-radius:2px;color:#1e4967}
+.action.primary{background:#1f6c98;color:#fff;border-color:#1f6c98}
+.event{padding:9px 11px;border-bottom:1px dotted #ccd5da}
+.event b{color:#9d2424;font-size:11px} .event p{margin:3px 0;font-size:11px;line-height:1.35}
+.feed{max-height:270px;overflow:auto}
+.notice{padding:11px;background:#eef6fb;border-left:3px solid #26709e;margin:10px 12px}
+.modal-back{position:fixed;inset:0;background:#081521aa;display:flex;align-items:center;justify-content:center;z-index:20}
+.modal{background:#fff;width:min(620px,92vw);border:1px solid #9baab4;box-shadow:0 12px 40px #0005}
+.modalhead{background:#12304a;color:#fff;padding:13px 16px;font-weight:bold}
+.modalbody{padding:18px} .modalbody h2{margin:0 0 7px} .choices{display:grid;gap:7px;margin-top:15px}
+.choice{text-align:left;border:1px solid #c3cfd6;background:#f7f9fa;padding:11px;border-radius:2px}
+.choice:hover{background:#e7f0f6}
+.hidden{display:none!important}
+.footer{font-size:9px;color:#6d808e;text-align:right;padding:3px}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.side{display:none}.grid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.topright{display:none}}
+
+.screen{display:none}.activeScreen{display:block}
+.workspace{display:grid;grid-template-columns:1.35fr .85fr;gap:12px}
+.quickgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}.quick{border:1px solid #d3dce1;padding:10px;background:#fafcfd}.quick small{display:block;color:#6d808e;font-size:9px}.quick b{font-size:11px;display:block;margin-top:5px}
+.taskrow{display:grid;grid-template-columns:125px 1fr 55px;gap:8px;padding:11px 12px;border-bottom:1px solid #edf0f2;align-items:center;font-size:11px}.taskrow span{color:#667b89}.smallbtn{border:1px solid #b8c5cd;background:#f5f8fa;padding:5px 8px;color:#205579}
+.procedure{display:grid;grid-template-columns:130px 1fr;padding:12px 14px;border-bottom:1px solid #edf0f2}.procedure span{color:#607583}
+.warehousegrid,.peoplegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}.warehousebox,.person{border:1px solid #ccd6dc;padding:12px;background:#fafcfd}.warehousebox span,.person span{display:block;color:#708390;font-size:10px;margin:4px 0}.warehousebox strong{color:#2b6e4d;font-size:10px}
+.revenueReport,.careerbig{padding:20px;font-size:13px;line-height:1.7}
+.orderDock{position:fixed;right:22px;bottom:22px;width:410px;max-width:calc(100vw - 35px);background:#fff;border:1px solid #9eabb4;box-shadow:0 12px 35px #0004;z-index:50}
+.orderDock.hidden{display:none}.dockhead{height:42px;background:#12304a;color:#fff;padding:0 12px;display:flex;align-items:center;justify-content:space-between}.dockhead button{background:transparent;color:#fff;border:0;font-size:23px}.dockbody{padding:14px}.dockchoices{display:grid;gap:7px;margin-top:12px}.dockchoice{border:1px solid #c2ced5;background:#f7f9fa;text-align:left;padding:9px}.dockchoice:hover{background:#e7f0f6}
+@media(max-width:1000px){.workspace{grid-template-columns:1fr}.orderDock{right:10px;bottom:10px}}
+</style>
+
+<style>
+.orderDock{position:fixed;right:22px;bottom:22px;width:410px;max-width:calc(100vw - 30px);background:#fff;border:1px solid #8e9ca6;box-shadow:0 14px 38px #0005;z-index:9999}
+.dockhead{height:42px;background:#12304a;color:#fff;padding:0 12px;display:flex;align-items:center;justify-content:space-between}
+.dockhead button{background:transparent;color:#fff;border:0;font-size:24px;cursor:pointer}.dockbody{padding:14px}.dockchoices{display:grid;gap:7px;margin-top:10px}
+.dockchoice{border:1px solid #c3cfd6;background:#f7f9fa;text-align:left;padding:10px;cursor:pointer}.dockchoice:hover{background:#e4eef5}
+</style>
+
+<style>
+#topRibbon button{border-bottom:3px solid transparent}
+#topRibbon button.active{background:#dceaf4;border-bottom-color:#246b98;color:#12304a;font-weight:bold}
+#topActionStrip{background:#f7f9fa;border-bottom:1px solid #cbd4da;padding:7px 14px;min-height:36px}
+.top-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.top-actions span{font-size:10px;color:#647985;margin-right:8px}
+.top-actions button{border:1px solid #bcc9d1;background:white;color:#24506d;padding:6px 10px;border-radius:2px;cursor:pointer}
+.top-actions button:hover{background:#e4eef5}
+</style>
+</head>
+<body>
+<header class="top">
+<img class="logo" src="data:image/png;base64,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" alt="OJ&K Ísam logo">
+<div><div class="subtitle">WAREHOUSE MANAGEMENT</div><div class="title">OJ&K / Ísam — Operations Center</div></div>
+<div class="topright">
+  <div class="kpi-mini"><small>DAY</small><b id="topDay">1 / 30</b></div>
+  <div class="kpi-mini"><small>CASH</small><b id="topCash">0 ISK</b></div>
+</div>
+</header>
+
+<nav class="ribbon" id="topRibbon">
+<button class="active" data-top="operations">Home</button>
+<button data-top="orders">Orders</button>
+<button data-top="warehouse">Warehouse</button>
+<button data-top="dispatch">Dispatch</button>
+<button data-top="drivers">Drivers</button>
+<button data-top="sales">Sales</button>
+<button data-top="service">Customer Service</button>
+</nav>
+
+<div id="topActionStrip" style="display:none"></div>
+<div class="layout">
+<aside class="side">
+<h3>Navigation</h3>
+<div class="nav active" data-screen="operations" onclick="showScreen('operations')">Operations</div>
+<div class="nav" data-screen="orders" onclick="showScreen('orders')">Order queue</div>
+<div class="nav" data-screen="warehouse" onclick="showScreen('warehouse')">Picking</div>
+<div class="nav" data-screen="dispatch" onclick="showScreen('dispatch')">Dispatch</div>
+<div class="nav" data-screen="drivers" onclick="showScreen('drivers')">Drivers</div>
+<h3>Reports</h3>
+<div class="nav" data-screen="revenue" onclick="showScreen('revenue')">Revenue</div>
+<div class="nav" data-screen="career" onclick="showScreen('career')">Career statistics</div>
+<h3>People</h3>
+<div class="nav" data-screen="sales" onclick="showScreen('sales')">Sales</div>
+<div class="nav" data-screen="service" onclick="showScreen('service')">Customer Service</div>
+</aside>
+
+
+<main class="main">
+<section class="cards">
+<div class="card"><small>Orders today</small><strong id="ordersToday">0 / 0</strong><em>dynamic queue</em></div>
+<div class="card"><small>Orders remaining</small><strong id="remaining">0</strong><em>to finish</em></div>
+<div class="card"><small>Delivered today</small><strong id="deliveredToday">0</strong><em>completed</em></div>
+<div class="card"><small>Total delivered</small><strong id="totalDelivered">0</strong><em>career</em></div>
+<div class="card"><small>Shipment value</small><strong id="shipmentValue">0 ISK</strong><em>delivered goods</em></div>
+<div class="card"><small>Company cash</small><strong id="topCash2">50,000 ISK</strong><em>operating balance</em></div>
+</section>
+
+<div id="screenOperations" class="screen activeScreen">
+<div class="workspace">
+<div>
+<section class="panel">
+<div class="panelhead"><b>OPERATIONS OVERVIEW</b><span id="queueLabel">No active day</span></div>
+<div class="notice" id="currentNotice">Start the day to receive your orders.</div>
+<div class="quickgrid">
+<div class="quick"><small>AX</small><b id="axTask">Waiting for orders.</b></div>
+<div class="quick"><small>WAREHOUSE</small><b id="whTask">No urgent warehouse task.</b></div>
+<div class="quick"><small>CUSTOMER SERVICE</small><b id="csTask">No unanswered calls.</b></div>
+<div class="quick"><small>DISPATCH</small><b id="dispatchTask">No dispatch exception.</b></div>
+</div>
+</section>
+
+<section class="panel">
+<div class="panelhead"><b>ORDER QUEUE</b><span>latest activity</span></div>
+<table class="table">
+<thead><tr><th>Order</th><th>Customer</th><th>Value</th><th>Driver</th><th>Status</th></tr></thead>
+<tbody id="ordersTable"></tbody>
+</table>
+<div class="actions">
+<button class="action primary" id="startBtn">Start / Continue Day</button>
+<button class="action" id="nextBtn">Process Next Order</button>
+</div>
+</section>
+
+<section class="panel">
+<div class="panelhead"><b>DAY PROGRESS</b><span id="progressText">0%</span></div>
+<div style="padding:13px"><div class="progress"><i id="progressBar" style="width:0%"></i></div></div>
+</section>
+</div>
+
+<div>
+<section class="panel">
+<div class="panelhead"><b>ADDITIONAL TASKS</b><span>work queue</span></div>
+<div class="taskrow"><b>Pick & Dispatch</b><span>Process the next order without blocking the rest of the dashboard.</span><button class="smallbtn" onclick="openOrderDock()">Open</button></div>
+<div class="taskrow"><b>Shipment sequence</b><span>Keep dry, chilled and frozen orders together.</span><button class="smallbtn" onclick="showScreen('dispatch')">View</button></div>
+<div class="taskrow"><b>AX exceptions</b><span>Check late, duplicate or incorrectly entered orders.</span><button class="smallbtn" onclick="showScreen('orders')">View</button></div>
+<div class="taskrow"><b>Customer calls</b><span>Review ETA and missing-product questions.</span><button class="smallbtn" onclick="showScreen('service')">View</button></div>
+</section>
+
+<section class="panel">
+<div class="panelhead"><b>RANDOM WAREHOUSE FEED</b><span>events</span></div>
+<div class="feed" id="feed"><div class="event"><b>System</b><p>Welcome to the operations center.</p></div></div>
+</section>
+</div>
+</div>
+</div>
+
+<div id="screenOrders" class="screen">
+<section class="panel"><div class="panelhead"><b>ORDER QUEUE & AX CONTROL</b><span>orders / exceptions</span></div>
+<div class="notice">Orders should normally be entered into AX before 11:00. Late entries, wrong products, duplicate orders and missing lines can appear as random events.</div>
+<table class="table"><thead><tr><th>Order</th><th>Customer</th><th>Value</th><th>AX status</th><th>Action</th></tr></thead>
+<tbody id="ordersDetailTable"></tbody></table></section>
+<section class="panel"><div class="panelhead"><b>ORDER PROCEDURES</b></div>
+<div class="procedure"><b>1. AX</b><span>Verify customer, quantity, delivery date and product lines.</span></div>
+<div class="procedure"><b>2. Picking</b><span>Dry, chilled and frozen orders should remain grouped in the dispatch sequence.</span></div>
+<div class="procedure"><b>3. Dispatch</b><span>Drivers collect pallets in the prepared order unless Dispatch gives another instruction.</span></div>
+<div class="procedure"><b>4. Delivery</b><span>Confirm route, customer and all cartons before leaving.</span></div></section>
+</div>
+
+<div id="screenWarehouse" class="screen">
+<section class="panel"><div class="panelhead"><b>WAREHOUSE WORK CENTER</b><span>picking / staging</span></div>
+<div class="warehousegrid">
+<div class="warehousebox"><b>DRY STORE</b><span>Picking line active</span><strong>READY</strong></div>
+<div class="warehousebox"><b>CHILLED</b><span>Temperature controlled</span><strong>READY</strong></div>
+<div class="warehousebox"><b>FREEZER</b><span>Frozen dispatch</span><strong>READY</strong></div>
+<div class="warehousebox"><b>MISPLACED CARTONS</b><span>Search required when triggered</span><strong>CHECK</strong></div>
+</div>
+<div class="notice">Daniel / Dagur can be assigned to search for a carton when an order is placed in the wrong location.</div></section>
+</div>
+
+<div id="screenDispatch" class="screen">
+<section class="panel"><div class="panelhead"><b>DISPATCH CONTROL</b><span>pallet sequence</span></div>
+<table class="table"><thead><tr><th>Priority</th><th>Area</th><th>Contents</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Dry store</td><td>Ambient pallets</td><td><span class="status">READY</span></td></tr>
+<tr><td>2</td><td>Chilled</td><td>Refrigerated pallets</td><td><span class="status">READY</span></td></tr>
+<tr><td>3</td><td>Freezer</td><td>Frozen pallets</td><td><span class="status">READY</span></td></tr>
+</tbody></table>
+<div class="notice">Driver collection should follow the prepared line. Random events can create missing pallets, wrong selection or a forgotten carton.</div></section>
+</div>
+
+<div id="screenDrivers" class="screen">
+<section class="panel"><div class="panelhead"><b>DRIVER PERFORMANCE</b><span>career statistics</span></div>
+<table class="table"><thead><tr><th>#</th><th>Driver</th><th>Delivered</th><th>Shipment value</th></tr></thead><tbody id="driversTable"></tbody></table></section>
+</div>
+
+<div id="screenSales" class="screen">
+<section class="panel"><div class="panelhead"><b>SALES & CUSTOMER PRIORITIES</b><span>sales team</span></div>
+<div class="peoplegrid"><div class="person"><b>Fitim</b><span>Sales</span></div><div class="person"><b>Atli</b><span>Sales</span></div><div class="person"><b>Andri</b><span>Sales</span></div><div class="person"><b>Eggert</b><span>Sales</span></div><div class="person"><b>Matti</b><span>Sales</span></div><div class="person"><b>Gisli</b><span>Sales</span></div><div class="person"><b>Anton</b><span>Sales</span></div><div class="person"><b>Maggi Roberts</b><span>Sales</span></div><div class="person"><b>Skuli</b><span>Sales</span></div><div class="person"><b>Lárus</b><span>Sales</span></div><div class="person"><b>Bjössi</b><span>Sales</span></div></div>
+<div class="notice">Random Sales events may include late AX entries, website excuses, requests to prioritise orders, and questions about information already available in AX.</div></section>
+</div>
+
+<div id="screenService" class="screen">
+<section class="panel"><div class="panelhead"><b>CUSTOMER SERVICE</b><span>open questions</span></div>
+<div class="peoplegrid"><div class="person"><b>Kristjana</b><span>Customer Service</span></div><div class="person"><b>Auður</b><span>Customer Service</span></div><div class="person"><b>Hildur</b><span>Customer Service</span></div><div class="person"><b>Stefania</b><span>Customer Service</span></div></div>
+<div class="notice">Customer Service can ask about delivery time, missing products, wrong quantities and delayed shipments.</div></section>
+</div>
+
+<div id="screenRevenue" class="screen">
+<section class="panel"><div class="panelhead"><b>REVENUE & SHIPMENT VALUE</b><span>career</span></div>
+<div id="revenueReport" class="revenueReport"></div></section>
+</div>
+
+<div id="screenCareer" class="screen">
+<section class="panel"><div class="panelhead"><b>CAREER REPORT</b><span>30 days</span></div>
+<div class="careerbig" id="careerReport"></div></section>
+</div>
+</main>
+
+</div>
+
+<div class="modalbody"><h2 id="modalH2"></h2><p id="modalText"></p><div class="choices" id="choices"></div></div>
+</div>
+</div>
+
+
+<script>
+"use strict";
+
+const DRIVERS=["Arek","Norbert","Axel","Adam","Niko","Indri","Einar","Daniel","Davið"];
+const CUSTOMERS=["Bónus Selfoss","Bónus Akranes","Bónus Borgarnes","Kol Restaurant","Lunaveitingar","Alfasaga","Frosta","Hveragerði","Golf Club South","Hotel Reykjavík"];
+const SALES=["Fitim","Atli","Andri","Eggert","Matti","Gisli","Anton","Maggi Roberts","Skuli","Lárus","Bjössi"];
+const SERVICE=["Kristjana","Auður","Hildur","Stefania"];
+
+const G={
+ day:1, maxDays:30, dayOrders:0, processed:0, deliveredToday:0,
+ totalDelivered:0, totalValue:0, cash:50000, reputation:50,
+ started:false, current:null, history:[], events:[],
+ drivers:{}
+};
+DRIVERS.forEach(n=>G.drivers[n]={orders:0,value:0});
+
+const $=id=>document.getElementById(id);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const isk=n=>Math.round(n).toLocaleString("en-US")+" ISK";
+const val=()=>Math.round((75000+Math.random()*425000)/1000)*1000;
+
+function addEvent(who,title,text){
+  G.events.unshift({who,title,text});
+  G.events=G.events.slice(0,10);
+  const feed=$("feed");
+  if(feed){
+    feed.innerHTML=G.events.map(e=>`<div class="event"><b>${e.who} — ${e.title}</b><p>${e.text}</p></div>`).join("");
+  }
+}
+
+function showScreen(name){
+  document.querySelectorAll(".screen").forEach(x=>x.classList.remove("activeScreen"));
+  const id="screen"+name.charAt(0).toUpperCase()+name.slice(1);
+  const target=$(id);
+  if(target)target.classList.add("activeScreen");
+  document.querySelectorAll(".nav").forEach(n=>{
+    n.classList.toggle("active",n.dataset.screen===name);
+  });
+  if(typeof setTopActive==="function")setTopActive(name);
+  if(typeof renderTopActions==="function")renderTopActions(name);
+  renderScreen(name);
+}
+
+function renderScreen(name){
+  if(name==="drivers" && $("driversTable")){
+    const rows=[...DRIVERS].sort((a,b)=>G.drivers[b].orders-G.drivers[a].orders);
+    $("driversTable").innerHTML=rows.map((d,i)=>
+      `<tr><td>${i+1}</td><td><b>${d}</b></td><td>${G.drivers[d].orders}</td><td>${G.drivers[d].value?isk(G.drivers[d].value):"—"}</td></tr>`
+    ).join("");
+  }
+  if(name==="orders" && $("ordersDetailTable")){
+    const rows=G.history.slice(-12).reverse();
+    $("ordersDetailTable").innerHTML=rows.length?rows.map(o=>
+      `<tr><td>${o.id}</td><td>${o.customer}</td><td>${isk(o.value)}</td><td>${o.ax}</td><td>${o.status}</td></tr>`
+    ).join(""):`<tr><td colspan="5">No orders processed yet.</td></tr>`;
+  }
+  if(name==="revenue" && $("revenueReport")){
+    const avg=G.totalDelivered?G.totalValue/G.totalDelivered:0;
+    $("revenueReport").innerHTML=
+      `<b>Total shipment value:</b> ${isk(G.totalValue)}<br>
+       <b>Delivered orders:</b> ${G.totalDelivered}<br>
+       <b>Average order value:</b> ${avg?isk(avg):"—"}<br>
+       <b>Company cash:</b> ${isk(G.cash)}<br><br>
+       <b>Examples:</b> Bónus Selfoss — 120,000 ISK · Kol Restaurant — 250,000 ISK`;
+  }
+  if(name==="career" && $("careerReport")){
+    const best=[...DRIVERS].sort((a,b)=>G.drivers[b].orders-G.drivers[a].orders)[0];
+    $("careerReport").innerHTML=
+      `<b>Day:</b> ${G.day}/${G.maxDays}<br>
+       <b>Total delivered:</b> ${G.totalDelivered}<br>
+       <b>Total shipment value:</b> ${isk(G.totalValue)}<br>
+       <b>Cash:</b> ${isk(G.cash)}<br>
+       <b>Reputation:</b> ${G.reputation}<br>
+       <b>Top driver:</b> ${G.drivers[best].orders?best+" — "+G.drivers[best].orders+" deliveries":"—"}`;
+  }
+}
+
+function update(){
+  const remaining=Math.max(0,G.dayOrders-G.processed);
+  const pct=G.dayOrders?Math.round(G.processed/G.dayOrders*100):0;
+
+  if($("topDay"))$("topDay").textContent=`${G.day} / ${G.maxDays}`;
+  if($("topCash"))$("topCash").textContent=isk(G.cash);
+  if($("topCash2"))$("topCash2").textContent=isk(G.cash);
+  if($("ordersToday"))$("ordersToday").textContent=`${G.processed} / ${G.dayOrders}`;
+  if($("remaining"))$("remaining").textContent=remaining;
+  if($("deliveredToday"))$("deliveredToday").textContent=G.deliveredToday;
+  if($("totalDelivered"))$("totalDelivered").textContent=G.totalDelivered;
+  if($("shipmentValue"))$("shipmentValue").textContent=isk(G.totalValue);
+  if($("reputation"))$("reputation").textContent=G.reputation;
+  if($("progressBar"))$("progressBar").style.width=pct+"%";
+  if($("progressText"))$("progressText").textContent=pct+"%";
+  if($("queueLabel"))$("queueLabel").textContent=G.started?`${G.dayOrders} scheduled — ${remaining} remaining`:"No active day";
+
+  if($("currentNotice")){
+    $("currentNotice").innerHTML=G.current?
+      `<b>${G.current.id}</b> — ${G.current.customer} — <b>${isk(G.current.value)}</b> — driver ${G.current.driver}`:
+      (G.started?"Ready for the next order.":"Start the day to receive your orders.");
+  }
+
+  if($("ordersTable")){
+    $("ordersTable").innerHTML=G.current?
+      `<tr><td>${G.current.id}</td><td>${G.current.customer}</td><td>${isk(G.current.value)}</td><td>${G.current.driver}</td><td><span class="status warn">IN PROCESS</span></td></tr>`:
+      `<tr><td colspan="5">No order currently being processed.</td></tr>`;
+  }
+
+  if($("axTask"))$("axTask").textContent=G.started?(G.processed%7===0?"Check a late AX entry.":"AX queue operating normally."):"Waiting for orders.";
+  if($("whTask"))$("whTask").textContent=G.started?(G.processed%9===0?"Search for a misplaced carton.":"Picking line operating normally."):"No urgent warehouse task.";
+  if($("csTask"))$("csTask").textContent=G.started?(G.processed%11===0?"Customer Service is asking for an ETA.":"No unanswered calls."):"No unanswered calls.";
+  if($("dispatchTask"))$("dispatchTask").textContent=G.started?(G.processed%13===0?"Check pallet sequence before the next driver leaves.":"Dispatch line ready."):"No dispatch exception.";
+
+  renderScreen("drivers");
+  renderScreen("orders");
+}
+
+function newDay(){
+  if(G.day>G.maxDays){finishCareer();return;}
+  G.dayOrders=Math.floor(120+Math.random()*131);
+  G.processed=0;G.deliveredToday=0;G.current=null;G.started=true;
+  addEvent("SYSTEM","NEW DAY",`Day ${G.day} started with ${G.dayOrders} orders.`);
+  update();
+  showScreen("operations");
+}
+
+function startOrNext(){
+  if(!G.started){newDay();return;}
+  if(G.processed>=G.dayOrders){nextDay();return;}
+  openOrderDock();
+}
+
+function openOrderDock(){
+  if(!G.started){newDay();return;}
+  if(G.processed>=G.dayOrders){nextDay();return;}
+  if(!G.current){
+    G.current={
+      id:"SP"+Math.floor(100000+Math.random()*900000),
+      customer:pick(CUSTOMERS),
+      value:val(),
+      driver:pick(DRIVERS),
+      problem:Math.random()<0.30
+    };
+  }
+  let dock=$("orderDock");
+  if(!dock){
+    dock=document.createElement("div");
+    dock.id="orderDock";dock.className="orderDock";
+    document.body.appendChild(dock);
+  }
+  const o=G.current;
+  dock.innerHTML=`
+    <div class="dockhead"><b>ORDER WORKSPACE</b><button id="dockClose">×</button></div>
+    <div class="dockbody">
+      <div style="margin-bottom:8px"><b>${o.id}</b><br>${o.customer}<br>Value: <b>${isk(o.value)}</b><br>Driver: ${o.driver}</div>
+      <div class="dockchoices">
+        ${o.problem?`
+        <button class="dockchoice" id="fix"><b>Fix the issue</b><br>Verify AX and correct the order.</button>
+        <button class="dockchoice" id="send"><b>Dispatch anyway</b><br>Accept the operational risk.</button>
+        <button class="dockchoice" id="sales"><b>Call Sales</b><br>Ask ${pick(SALES)} to confirm the order.</button>
+        `:`
+        <button class="dockchoice" id="pick"><b>Pick & Dispatch</b><br>Complete picking and send the planned route.</button>
+        <button class="dockchoice" id="priority"><b>Priority Dispatch</b><br>Move this order to the next available driver.</button>
+        `}
+      </div>
+    </div>`;
+  document.body.appendChild(dock);
+  $("dockClose").onclick=closeOrderDock;
+  const finish=(ok)=>finishOrder(ok);
+  if(o.problem){
+    $("fix").onclick=()=>finish(true);
+    $("send").onclick=()=>finish(Math.random()<.7);
+    $("sales").onclick=()=>finish(true);
+  }else{
+    $("pick").onclick=()=>finish(true);
+    $("priority").onclick=()=>finish(true);
+  }
+}
+
+function closeOrderDock(){
+  const d=$("orderDock");if(d)d.remove();
+}
+
+function finishOrder(success){
+  const o=G.current;if(!o)return;
+  closeOrderDock();
+  G.processed++;
+  const ok=success===true;
+  if(ok){
+    G.deliveredToday++;G.totalDelivered++;G.totalValue+=o.value;
+    G.drivers[o.driver].orders++;G.drivers[o.driver].value+=o.value;
+    const margin=Math.round(o.value*(0.018+Math.random()*0.012));
+    G.cash+=margin;G.reputation=Math.min(100,G.reputation+1);
+    G.history.push({...o,status:"DELIVERED",ax:o.problem?"CORRECTED":"OK"});
+    addEvent(o.driver,"DELIVERED",`${o.customer} delivered for ${isk(o.value)}. Margin +${isk(margin)}.`);
+  }else{
+    const cost=Math.round(150+Math.random()*250);
+    G.cash-=cost;G.reputation=Math.max(0,G.reputation-1);
+    G.history.push({...o,status:"PROBLEM",ax:"EXCEPTION"});
+    addEvent("DISPATCH","PROBLEM",`${o.customer} had an operational issue. Cost -${isk(cost)}.`);
+  }
+  G.current=null;
+  randomEvent();
+  update();
+  if(G.processed<G.dayOrders){
+    setTimeout(()=>openOrderDock(),250);
+  }else{
+    setTimeout(()=>nextDay(),400);
+  }
+}
+
+function randomEvent(){
+  if(Math.random()>.20)return;
+  const e=pick([
+    ["Claude","LUNCH!","Claude walks past the warehouse and suddenly shouts “LUNCH!” for absolutely no reason."],
+    ["Claude","VIVA LA FRANCE!","Claude appears from nowhere and starts shouting “VIVA LA FRANCE!” before walking away."],
+    ["Eric","COFFEE CEREMONY","Eric goes for coffee and starts clapping without any obvious reason."],
+    ["Eric","UNEXPECTED APPLAUSE","Eric enters the warehouse, looks around and begins applauding."],
+    [pick(SALES),"SALES REQUEST","A salesperson calls asking for information that is already available in AX."],
+    [pick(SERVICE),"CUSTOMER SERVICE","Can you confirm the delivery time? The customer says the shipment is late."],
+    ["AX","SYSTEM ISSUE","AX is slow and one order needs a manual check."],
+    ["WAREHOUSE","MISPLACED CARTON","A carton has been placed in the wrong location. Daniel / Dagur needs to search for it."]
+  ]);
+  addEvent(...e);
+}
+
+function nextDay(){
+  G.day++;
+  if(G.day>G.maxDays){finishCareer();return;}
+  newDay();
+}
+
+function finishCareer(){
+  G.started=false;
+  closeOrderDock();
+  addEvent("SYSTEM","CAREER COMPLETE",`30 days finished. ${G.totalDelivered} deliveries and ${isk(G.totalValue)} shipment value.`);
+  showScreen("career");
+  renderScreen("career");
+}
+
+document.addEventListener("click",e=>{
+  const nav=e.target.closest(".nav");
+  if(nav && nav.dataset.screen)showScreen(nav.dataset.screen);
+});
+
+
+function setTopActive(name){
+  document.querySelectorAll("#topRibbon button").forEach(b=>{
+    b.classList.toggle("active",b.dataset.top===name);
+  });
+}
+function renderTopActions(name){
+  const strip=document.getElementById("topActionStrip");
+  const sets={
+    operations:[
+      ["Start / Continue Day","startOrNext()"],
+      ["Process Next Order","startOrNext()"],
+      ["Open Order Queue","showScreen('orders')"]
+    ],
+    orders:[
+      ["Process Next Order","startOrNext()"],
+      ["Refresh Queue","renderScreen('orders')"],
+      ["AX Exceptions","showScreen('orders')"]
+    ],
+    warehouse:[
+      ["Open Picking","showScreen('warehouse')"],
+      ["Find Misplaced Carton","addEvent('WAREHOUSE','SEARCH','Daniel / Dagur is searching the staging area for a misplaced carton.')"],
+      ["Check Staging","addEvent('WAREHOUSE','STAGING','Dry, chilled and frozen staging lines checked.')"]
+    ],
+    dispatch:[
+      ["Open Dispatch","showScreen('dispatch')"],
+      ["Check Pallet Sequence","addEvent('DISPATCH','PALLET CHECK','Driver collection order has been checked.')"],
+      ["Call Driver","addEvent('DISPATCH','DRIVER CALL','Dispatch contacted the next driver for confirmation.')"]
+    ],
+    drivers:[
+      ["Driver Leaderboard","showScreen('drivers')"],
+      ["Assign Next Driver","startOrNext()"],
+      ["Driver Status","addEvent('DISPATCH','DRIVER STATUS','Current driver availability checked.')"]
+    ],
+    sales:[
+      ["Sales Requests","showScreen('sales')"],
+      ["Call Sales","addEvent('SALES','PHONE CALL',pick(SALES)+' called asking about an order already visible in AX.')"],
+      ["Priority Request","addEvent('SALES','PRIORITY REQUEST',pick(SALES)+' asks to move a customer order forward.')"]
+    ],
+    service:[
+      ["Customer Questions","showScreen('service')"],
+      ["Check ETA","addEvent('CUSTOMER SERVICE','ETA',pick(SERVICE)+' asks for a delivery time update.')"],
+      ["Missing Product","addEvent('CUSTOMER SERVICE','MISSING PRODUCT',pick(SERVICE)+' reports a customer asking about a missing product.')"]
+    ]
+  };
+  const items=sets[name]||sets.operations;
+  strip.innerHTML='<div class="top-actions"><span>QUICK ACTIONS</span>'+
+    items.map(([label,code])=>`<button onclick="${code}">${label}</button>`).join("")+
+    '</div>';
+  strip.style.display="block";
+}
+function topNavigate(name){
+  setTopActive(name);
+  showScreen(name);
+  renderTopActions(name);
+}
+document.querySelectorAll("#topRibbon button").forEach(b=>{
+  b.addEventListener("click",()=>topNavigate(b.dataset.top));
+});
+
+window.addEventListener("DOMContentLoaded",()=>{
+  const start=$("startBtn"),next=$("nextBtn");
+  if(start)start.onclick=startOrNext;
+  if(next)next.onclick=startOrNext;
+  showScreen("operations");
+  update();
+});
+</script>
+
+</body></html>
